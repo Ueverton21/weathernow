@@ -2,11 +2,13 @@
     <div>
         <nav class="menu">
             <div class="title">
-                <h1>Weather Now</h1>
-                <div class="redes-sociais">
-                    <a class="facebook" href="https://facebook.com" target="_blank">Facebook</a>
-                    <a class="instagram" href="https://instagram.com" target="_blank">Instagram</a>
-                    <a class="twitter" href="https://twitter.com" target="_blank">Twitter</a>
+                <div class="box-dark">
+                    <h1>Weather Now</h1>
+                    <div class="redes-sociais">
+                        <a class="facebook" href="https://facebook.com" target="_blank"><facebook-icon></facebook-icon></a>
+                        <a class="instagram" href="https://instagram.com" target="_blank"><instagram-icon></instagram-icon></a>
+                        <a class="twitter" href="https://twitter.com" target="_blank"><twitter-icon></twitter-icon></a>
+                    </div>
                 </div>
             </div>
             <div class="content">
@@ -15,16 +17,19 @@
                 <button v-if="!loading.buttonSearch" @click="getPrevisao()">
                     <img class="search" src="../assets/icon_pesquisa.png" alt="Pesquisa">
                 </button>
-                <div v-else class="box-image-search-load">
-                    <img class="search" src="../assets/load.gif" alt="Pesquisa">
-                </div>
             </div>
         </nav>
         <div class="main">
+            <img class="load-page" v-if="loading.buttonSearch" src="../assets/load.gif" alt="carregando...">
+
+            <div v-if="error.cidade.err" class="erro-cidade">
+                <p>{{error.cidade.message}}</p>
+            </div>
+
             <section v-if="atual.length!==0" class="box-current">
                 <div class="box-current-dark">
                     <div class="box-current-right">
-                        <h2>Tempo agora em {{cidadeView}}</h2>
+                        <h2>Tempo agora em <span>{{cidadeView}}</span></h2>
                         <h3>{{getDataAtual()}}</h3>
                         <img :src="getUrlImage(atual.weather[0].icon)" alt="icone da previsão do tempo" />
                         <p>{{atual.weather[0].description}}</p>
@@ -36,14 +41,23 @@
                 </div>
             </section>
 
-            <section class="box-list-hourly">
-                <BoxHourly v-for="item of horas" :key="item.dt" :hourly="item"/>
+            <section class="box-buttons" v-if="atual.length!==0">
+                <button :class="viewHoras ? 'selected': ''" @click="selectViewHoras()">48 Horas</button>
+                <button :class="viewSemana ? 'selected': ''" @click="selectViewSemana()">7 Dias</button>
+            </section>
+
+            <section v-if="viewHoras" class="box-list-hourly">
+                <BoxHourly v-for="(item, index) in horas" :key="item.dt" :indice="index" :hourly="item"/>
             </section>
             
-            <section class="box-list-day">
-                <BoxDay v-for="item of dias" :key="item.dt" :day="item" />
+            <section v-if="viewSemana" class="box-list-day">
+                <BoxDay v-for="(item, index) of dias" :key="item.dt" :indice="index" :day="item" />
             </section>
         </div>
+        <footer>
+            <a href="https://github.com/Ueverton21" target="blank">Ueverton &copy;</a>
+            <github-icon></github-icon>
+        </footer>
     </div>
 </template>
 
@@ -53,16 +67,24 @@ import axios from 'axios';
 import BoxDay from '../components/BoxDay';
 import BoxHourly from '../components/BoxHourly';
 
+import FacebookIcon from 'vue-feather-icons/icons/FacebookIcon';
+import TwitterIcon from 'vue-feather-icons/icons/TwitterIcon';
+import InstagramIcon from 'vue-feather-icons/icons/InstagramIcon';
+import GithubIcon from 'vue-feather-icons/icons/GithubIcon';
+
 export default {
     name: 'Home',
     data(){
         return{
-            cidade: 'Quijingue',
+            cidade: localStorage.getItem('city') ? localStorage.getItem('city') : 'São Paulo',
             cidadeView: '',
 
             dias: [],
             horas: [],
             atual: [],
+
+            viewSemana: false,
+            viewHoras: true,
 
             loading: {
                 buttonSearch: false
@@ -75,33 +97,42 @@ export default {
             }
         }
     },
+    created(){
+        this.getPrevisao();
+    },
     components: {
         BoxDay,
-        BoxHourly
+        BoxHourly,
+        FacebookIcon,
+        TwitterIcon,
+        InstagramIcon,
+        GithubIcon
     },
     
     methods: {
         async getPrevisao(){
-            if(this.cidade){
-                this.loading.buttonSearch = true;
-                try{
-                    const responseLatLong = await axios.get(`http://api.openweathermap.org/data/2.5/forecast/daily?q=${this.cidade},br&cnt=16&units=metric&lang=pt_br&appid=a2c33fdd0019c87491399b6d35f1c715`);       
-                    const response = await axios.get(`https://api.openweathermap.org/data/2.5/onecall?lat=${responseLatLong.data.city.coord.lat}&lon=${responseLatLong.data.city.coord.lon}&units=metric&lang=pt_br&appid=a2c33fdd0019c87491399b6d35f1c715`);
-                    this.atual = response.data.current;
-                    this.dias = response.data.daily;
-                    this.horas = response.data.hourly;
-                    this.error.cidade.err = false;
-                    this.cidadeView = this.cidade;
-                    
-                } catch(err) {
-                    this.atual = [];
-                    this.dias = [];
-                    this.horas = [];
-                    this.error.cidade.err = true;
-                    this.error.cidade.message = "Cidade não encontrada";
-                }
-                this.loading.buttonSearch = false;
+            this.loading.buttonSearch = true;
+        
+            try{
+                const responseLatLong = await axios.get(`http://api.openweathermap.org/data/2.5/forecast/daily?q=${this.cidade},br&cnt=16&units=metric&lang=pt_br&appid=a2c33fdd0019c87491399b6d35f1c715`);       
+                const response = await axios.get(`https://api.openweathermap.org/data/2.5/onecall?lat=${responseLatLong.data.city.coord.lat}&lon=${responseLatLong.data.city.coord.lon}&units=metric&lang=pt_br&appid=a2c33fdd0019c87491399b6d35f1c715`);
+                this.atual = response.data.current;
+                this.dias = response.data.daily;
+                this.horas = response.data.hourly;
+                this.error.cidade.err = false;
+                this.cidadeView = this.cidade;
+                localStorage.setItem('city',this.cidade);
+                this.cidade = "";
+
+            } catch(err) {
+                this.atual = [];
+                this.dias = [];
+                this.horas = [];
+                this.error.cidade.err = true;
+                this.error.cidade.message = "Cidade não encontrada";
             }
+            this.loading.buttonSearch = false;
+            
         },
         getDataAtual(){
             const date = new Date();
@@ -116,7 +147,15 @@ export default {
         },
         getUrlImage(icon){
             return `http://openweathermap.org/img/wn/${icon}@2x.png`;
-        }
+        },
+        selectViewHoras(){
+            this.viewHoras = true;
+            this.viewSemana = false;
+        },
+        selectViewSemana(){
+            this.viewHoras = false;
+            this.viewSemana = true;
+        },
     }
 }
 
@@ -125,11 +164,14 @@ export default {
 <style scoped>
 
 .menu .title{
+    background-image: url('../assets/menu_image.jpg');
+}
+.menu .title .box-dark{
     padding: 15px 50px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background-image: url('../assets/menu_image.jpg');
+    background-color: rgba(0,0,0,.8);
 }
 
 .menu .title h1{
@@ -150,15 +192,19 @@ export default {
 .menu .title .redes-sociais a.instagram{
     color: #F39B39;
 }
-.menu .title .redes-sociais a.instagram{
+.menu .title .redes-sociais a.twitter{
     color: #2AA9E0;
+}
+
+.menu .title .redes-sociais a:hover{
+    opacity: .5;
 }
 
 .menu .content{
     display: flex;
     padding: 10px 50px;
     align-items: center;
-    background-color:  rgb(55, 137, 175);
+    background-color: rgb(41, 113, 138);
 }
 
 .menu input{
@@ -190,12 +236,7 @@ export default {
     align-items: center;
     justify-content: center;
 }
-div.box-image-search-load{
-    width: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+
 img.search{
     height: 30px;
 }
@@ -208,9 +249,24 @@ div.main{
     display: flex;
     flex-direction: column;
 }
+div.erro-cidade{
+    margin: 10px 0 600px 0;
+}
+div.erro-cidade p{
+    padding: 5px;
+    color: rgb(182, 48, 48);
+    font-size: 18px;
+    font-weight: bold;
+}
+
+img.load-page{
+    width: 150px;
+    height: 150px;
+    margin: 200px auto;
+}
 
 section.box-current{
-    margin-top: 10px;
+    margin-top: 20px;
     box-shadow: 0 0 10px #666;
     border-radius: 3px;
     background-image: url('../assets/bg_weather.jpg');
@@ -240,6 +296,9 @@ section.box-current div.box-current-dark p{
 
 section.box-current div.box-current-dark div.box-current-right h2{
     color: #FFF;
+}
+section.box-current div.box-current-dark div.box-current-right h2 span{
+    text-transform: capitalize;
 }
 section.box-current div.box-current-dark div.box-current-left{
     display: flex;
@@ -271,6 +330,66 @@ section.box-current div.box-current-dark div.box-current-left p.sensation span{
     font-weight: bold;
     color: #CCC;
     margin-right: 10px;
+}
+
+section.box-buttons{
+    margin-top: 10px;
+}
+
+section.box-buttons button{
+    padding: 10px 12px;
+    margin-right: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    border: 0;
+    background-color: #CCC;
+    border-radius: 3px;
+    font-weight: bold;
+    color: #222;
+}
+section.box-buttons button:focus{
+    outline: none;
+}
+section.box-buttons button.selected{
+    border: 2px solid #888;
+}
+
+div.main section.box-list-hourly{
+    margin-top: 10px;
+    box-shadow: 0 0 10px #666;
+    border-radius: 3px;
+}
+
+div.main section.box-list-day{
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-column-gap: 10px;
+}
+
+footer{
+    background-color: rgb(41, 113, 138);
+    margin-top: 20px;
+    padding: 20px 50px;
+    display: flex;
+    justify-content: center;
+}
+
+footer{
+    display: flex;
+    align-items: center;
+    color: #FFF;
+}
+footer a{
+    margin: 0 10px 0 0;
+    text-decoration: none;
+    color: #FFF;
+    font-size: 18px;
+    text-transform: uppercase;
+    font-weight: bold;
+    transition: .3s;
+}
+footer a:hover{
+    opacity: .6;
 }
 
 </style>
