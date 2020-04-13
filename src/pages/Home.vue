@@ -114,7 +114,7 @@ export default {
             this.loading.buttonSearch = true;
         
             try{
-                const responseLatLong = await axios.get(`http://api.openweathermap.org/data/2.5/forecast/daily?q=${this.cidade},br&cnt=16&units=metric&lang=pt_br&appid=a2c33fdd0019c87491399b6d35f1c715`);       
+                const responseLatLong = await axios.get(`https://api.openweathermap.org/data/2.5/forecast/daily?q=${this.cidade},br&cnt=16&units=metric&lang=pt_br&appid=a2c33fdd0019c87491399b6d35f1c715`);       
                 const response = await axios.get(`https://api.openweathermap.org/data/2.5/onecall?lat=${responseLatLong.data.city.coord.lat}&lon=${responseLatLong.data.city.coord.lon}&units=metric&lang=pt_br&appid=a2c33fdd0019c87491399b6d35f1c715`);
                 this.atual = response.data.current;
                 this.dias = response.data.daily;
@@ -146,7 +146,7 @@ export default {
             return ` ${hora}:${minuto} - ${diaDoMes}/${mes}/${date.getFullYear()}`;
         },
         getUrlImage(icon){
-            return `http://openweathermap.org/img/wn/${icon}@2x.png`;
+            return `https://openweathermap.org/img/wn/${icon}@2x.png`;
         },
         selectViewHoras(){
             this.viewHoras = true;
